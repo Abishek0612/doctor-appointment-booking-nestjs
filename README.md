@@ -61,8 +61,16 @@ JWT_SECRET=sscnsii2224422
 
 
 5. Run the Application
-Development mode
+### Development mode
 npm run start:dev
 
 # Production mode
 npm run start:prod
+
+### 6. Seed Database 
+  npm run seed
+
+
+# API Documentation
+Once the application is running, access the Swagger documentation at:
+http://localhost:3000/api/docs
