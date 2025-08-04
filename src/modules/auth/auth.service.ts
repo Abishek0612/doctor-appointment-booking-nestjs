@@ -6,7 +6,7 @@ export class AuthService {
   constructor(private jwtService: JwtService) {}
 
   async login(username: string, password: string) {
-    if (username === 'admin' && password === 'password') {
+    if (username === 'admin' && password === 'admin@123') {
       const payload = { username, role: 'admin' };
       return {
         access_token: this.jwtService.sign(payload),

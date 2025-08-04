@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Doctor } from '../../entities/doctor.entity';
@@ -62,11 +62,22 @@ export class DoctorsService {
   async getAvailableTimeSlots(doctorId: string, date: string): Promise<string[]> {
     const doctor = await this.findOne(doctorId);
     
-    const requestedDate = new Date(date);
+    const requestedDate = new Date(date + 'T00:00:00.000Z');
     const dayName = requestedDate.toLocaleDateString('en-US', { weekday: 'long' });
 
     if (!doctor.availableDays.includes(dayName)) {
-      return [];
+      const availableDaysFormatted = doctor.availableDays.join(', ');
+      throw new BadRequestException(
+        `Dr. ${doctor.firstName} ${doctor.lastName} is not available on ${dayName}. Available days: ${availableDaysFormatted}`
+      );
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    requestedDate.setHours(0, 0, 0, 0);
+
+    if (requestedDate < today) {
+      throw new BadRequestException('Cannot book appointments for past dates');
     }
 
     const allSlots = this.generateTimeSlots(doctor.startTime, doctor.endTime, doctor.slotDuration);
@@ -75,13 +86,25 @@ export class DoctorsService {
       where: {
         doctor: { id: doctorId },
         appointmentDate: requestedDate,
-        status: AppointmentStatus.SCHEDULED, // Use enum instead of string
+        status: AppointmentStatus.SCHEDULED,
       },
+      relations: ['doctor']
     });
 
-    const bookedTimes = bookedAppointments.map(appointment => appointment.startTime);
+    const bookedTimes = bookedAppointments.map(appointment => {
+      const timeStr = appointment.startTime;
+      return timeStr.length > 5 ? timeStr.substring(0, 5) : timeStr;
+    });
 
-    return allSlots.filter(slot => !bookedTimes.includes(slot));
+    const availableSlots = allSlots.filter(slot => !bookedTimes.includes(slot));
+
+    if (availableSlots.length === 0) {
+      throw new BadRequestException(
+        `No available time slots for Dr. ${doctor.firstName} ${doctor.lastName} on ${dayName}, ${date}. All slots are booked.`
+      );
+    }
+
+    return availableSlots;
   }
 
   private generateTimeSlots(startTime: string, endTime: string, duration: number): string[] {
