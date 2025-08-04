@@ -39,6 +39,7 @@ A comprehensive backend system built with **NestJS** for managing doctor appoint
 - npm or yarn
 
 
+##  Installation & Setup
 
 ### 1. Clone the Repository
 ```bash
@@ -128,10 +129,80 @@ Authorization: Bearer your-jwt-token
 | `POST` | `/appointments` | ✅ | Book new appointment |
 
 
+
+## Testing with Postman
+
+### Step-by-Step Testing Flow:
+
+#### 1. Login & Get Token
+```http
+POST http://localhost:3000/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "admin@123"
+}
+
+Save the access_token from response.
+
+2. Create Doctor
+POST http://localhost:3000/doctors
+Authorization: Bearer {your-token}
+Content-Type: application/json
+
+{
+  "firstName": "John",
+  "lastName": "Smith",
+  "specialization": "Cardiology",
+  "email": "john.smith@hospital.com",
+  "phone": "+1234567890",
+  "availableDays": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+  "startTime": "09:00",
+  "endTime": "17:00",
+  "slotDuration": 30
+}
+
+3. Check Available Time Slots
+GET http://localhost:3000/doctors/{doctor-id}/time-slots?date=2024-12-16
+Authorization: Bearer {your-token}
+
+
+4. Book Appointment
+POST http://localhost:3000/appointments
+Authorization: Bearer {your-token}
+Content-Type: application/json
+
+{
+  "patientName": "Jane Doe",
+  "patientEmail": "jane.doe@email.com",
+  "patientPhone": "+1234567890",
+  "appointmentDate": "2024-12-16",
+  "startTime": "10:00",
+  "doctorId": "{doctor-id}",
+  "notes": "Regular checkup"
+}
+
+5. Test Double-booking Prevention
+POST http://localhost:3000/appointments
+Authorization: Bearer {your-token}
+Content-Type: application/json
+
+{
+  "patientName": "John Doe",
+  "patientEmail": "john.doe@email.com",
+  "patientPhone": "+1234567891",
+  "appointmentDate": "2024-12-16",
+  "startTime": "10:00",
+  "doctorId": "{same-doctor-id}",
+  "notes": "Should fail - slot already booked"
+}
+
+
 ### **3. Assignment Completion Status**
 ##  Assignment Completion
 
-### ✅Core Requirements (100%)
+### Core Requirements (100%)
 - [x] Data models (Doctor, Appointment entities)
 - [x] View list of doctors with pagination & filtering
 - [x] View available time slots with dynamic generation
